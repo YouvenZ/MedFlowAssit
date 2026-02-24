@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MedGemma — Multi-Agent Medical Assistant</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ===== HEADER ========================================================= -->
+<header>
+  <div class="header-left">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="8" fill="#111"/>
+        <path d="M14 6v16M6 14h16" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h1>MedGemma<span class="accent">Agent</span></h1>
+    <nav class="header-nav">
+      <a href="/" class="nav-link active">Scenarios</a>
+      <a href="/chat" class="nav-link">Free Chat</a>
+      <a href="/workflows" class="nav-link">Workflows</a>
+    </nav>
+  </div>
+  <div class="header-right">
+    <span class="badge" id="phaseBadge">intake</span>
+    <button class="btn-icon" id="btnToggleSidebar" title="Toggle sidebar">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="2" rx="1" fill="currentColor"/><rect x="2" y="9" width="16" height="2" rx="1" fill="currentColor"/><rect x="2" y="14" width="16" height="2" rx="1" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ===== MAIN LAYOUT ==================================================== -->
+<main>
+
+  <!-- ─── SIDEBAR ─── -->
+  <aside id="sidebar">
+    <!-- STATUS CARD -->
+    <section class="card" id="statusCard">
+      <h3>Patient Status</h3>
+      <div class="status-grid">
+        <div class="status-item">
+          <span class="label">Name</span>
+          <span class="value" id="stName">—</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Phone</span>
+          <span class="value" id="stPhone">—</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Urgency</span>
+          <span class="value" id="stUrgency">—</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Specialty</span>
+          <span class="value" id="stSpecialty">—</span>
+        </div>
+        <div class="status-item full">
+          <span class="label">Symptoms</span>
+          <span class="value" id="stSymptoms">—</span>
+        </div>
+        <div class="status-item full" id="conditionsRow" style="display:none">
+          <span class="label">Possible conditions</span>
+          <span class="value" id="stConditions">—</span>
+        </div>
+        <div class="status-item full" id="redFlagsRow" style="display:none">
+          <span class="label">Red flags</span>
+          <span class="value red" id="stRedFlags">—</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCENARIOS -->
+    <section class="card">
+      <h3>Scenarios</h3>
+      <div class="scenario-list" id="scenarioList">
+        {% for num, s in scenarios.items() %}
+        <button class="scenario-btn" data-num="{{ num }}">
+          <span class="sc-icon">{{ s.icon }}</span>
+          <span class="sc-body">
+            <span class="sc-title">{{ s.title }}</span>
+            <span class="sc-desc">{{ s.desc }}</span>
+          </span>
+          <span class="tag tag-{{ s.tag }}">{{ s.tag }}</span>
+        </button>
+        {% endfor %}
+      </div>
+    </section>
+  </aside>
+
+  <!-- ─── CHAT AREA ─── -->
+  <section id="chatArea">
+    <div id="messages">
+      <div class="msg assistant">
+        <div class="msg-content">
+          <p>Hello! I'm your medical assistant. Describe your symptoms and I'll help triage your case, connect you with the right specialist, and book an appointment.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- INPUT -->
+    <form id="chatForm" autocomplete="off">
+      <div class="input-row">
+        <textarea id="userInput" rows="1" placeholder="Describe your symptoms…" required></textarea>
+        <button type="submit" class="btn-send" id="btnSend" title="Send">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 10h14M12 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="input-actions">
+        <button type="button" class="btn-text" id="btnReset">Reset conversation</button>
+        <button type="button" class="btn-text" id="btnPaperwork">Generate paperwork</button>
+      </div>
+    </form>
+  </section>
+</main>
+
+<!-- ===== PAPERWORK MODAL ================================================ -->
+<div class="modal-overlay" id="paperworkModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Paperwork</h2>
+      <button class="btn-icon" id="btnCloseModal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-bar">
+        <button class="tab active" data-tab="summary">Summary</button>
+        <button class="tab" data-tab="referral">Referral</button>
+        <button class="tab" data-tab="reminder">Reminder</button>
+      </div>
+      <div class="tab-content" id="tabSummary"><pre class="doc-text">Generating …</pre></div>
+      <div class="tab-content" id="tabReferral" style="display:none"><pre class="doc-text">Generating …</pre></div>
+      <div class="tab-content" id="tabReminder" style="display:none"><pre class="doc-text">Generating …</pre></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  DOM refs
+// ═══════════════════════════════════════════════════════════════════════════
+const $messages     = document.getElementById('messages');
+const $form         = document.getElementById('chatForm');
+const $input        = document.getElementById('userInput');
+const $btnSend      = document.getElementById('btnSend');
+const $btnReset     = document.getElementById('btnReset');
+const $btnPW        = document.getElementById('btnPaperwork');
+const $sidebar      = document.getElementById('sidebar');
+const $btnSidebar   = document.getElementById('btnToggleSidebar');
+const $phaseBadge   = document.getElementById('phaseBadge');
+const $modal        = document.getElementById('paperworkModal');
+const $btnCloseM    = document.getElementById('btnCloseModal');
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Chat
+// ═══════════════════════════════════════════════════════════════════════════
+let busy = false;
+
+function addMsg(role, html) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `<div class="msg-content">${html}</div>`;
+  $messages.appendChild(div);
+  $messages.scrollTop = $messages.scrollHeight;
+}
+
+function setLoading(on) {
+  busy = on;
+  $btnSend.disabled = on;
+  $input.disabled = on;
+  if (on) {
+    addMsg('assistant loading', '<div class="dots"><span></span><span></span><span></span></div>');
+  } else {
+    const ld = $messages.querySelector('.loading');
+    if (ld) ld.remove();
+  }
+}
+
+function escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Simple markdown: **bold**, *italic*, `code`, newlines
+function renderMd(text) {
+  let h = escHtml(text);
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/\*(.+?)\*/g,     '<em>$1</em>');
+  h = h.replace(/`(.+?)`/g,       '<code>$1</code>');
+  h = h.replace(/\n/g,            '<br>');
+  return `<p>${h}</p>`;
+}
+
+async function sendMessage(text) {
+  addMsg('user', renderMd(text));
+  setLoading(true);
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: text}),
+    });
+    const data = await res.json();
+    setLoading(false);
+    addMsg('assistant', renderMd(data.reply || 'No response'));
+    if (data.status) updateStatus(data.status);
+  } catch (e) {
+    setLoading(false);
+    addMsg('assistant error', `<p>Network error: ${escHtml(e.message)}</p>`);
+  }
+}
+
+$form.addEventListener('submit', e => {
+  e.preventDefault();
+  if (busy) return;
+  const text = $input.value.trim();
+  if (!text) return;
+  $input.value = '';
+  $input.style.height = 'auto';
+  sendMessage(text);
+});
+
+// Auto-resize textarea
+$input.addEventListener('input', () => {
+  $input.style.height = 'auto';
+  $input.style.height = Math.min($input.scrollHeight, 120) + 'px';
+});
+$input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    $form.dispatchEvent(new Event('submit'));
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Status sidebar
+// ═══════════════════════════════════════════════════════════════════════════
+function updateStatus(s) {
+  $phaseBadge.textContent       = s.phase || 'intake';
+  $phaseBadge.className         = 'badge phase-' + (s.phase || 'intake').toLowerCase();
+  document.getElementById('stName').textContent      = s.patient_name || '—';
+  document.getElementById('stPhone').textContent     = s.patient_phone || '—';
+  document.getElementById('stUrgency').textContent   = s.urgency || '—';
+  document.getElementById('stSpecialty').textContent  = s.specialty || '—';
+  document.getElementById('stSymptoms').textContent   = s.symptoms || '—';
+
+  const $cond = document.getElementById('stConditions');
+  const $condRow = document.getElementById('conditionsRow');
+  if (s.conditions && s.conditions.length) {
+    $cond.textContent = s.conditions.join(', ');
+    $condRow.style.display = '';
+  } else {
+    $condRow.style.display = 'none';
+  }
+
+  const $rf = document.getElementById('stRedFlags');
+  const $rfRow = document.getElementById('redFlagsRow');
+  if (s.red_flags && s.red_flags.length) {
+    $rf.textContent = s.red_flags.join(', ');
+    $rfRow.style.display = '';
+  } else {
+    $rfRow.style.display = 'none';
+  }
+
+  // urgency colour
+  const $u = document.getElementById('stUrgency');
+  $u.classList.remove('red','orange','green');
+  if (['IMMEDIATE','EMERGENT'].includes(s.urgency)) $u.classList.add('red');
+  else if (['URGENT','SEMI-URGENT'].includes(s.urgency)) $u.classList.add('orange');
+  else if (s.urgency) $u.classList.add('green');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Reset
+// ═══════════════════════════════════════════════════════════════════════════
+$btnReset.addEventListener('click', async () => {
+  await fetch('/api/reset', {method: 'POST'});
+  $messages.innerHTML = '';
+  addMsg('assistant', '<p>Conversation reset. How can I help you?</p>');
+  updateStatus({phase:'intake'});
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Sidebar toggle
+// ═══════════════════════════════════════════════════════════════════════════
+$btnSidebar.addEventListener('click', () => {
+  $sidebar.classList.toggle('collapsed');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Scenarios
+// ═══════════════════════════════════════════════════════════════════════════
+document.getElementById('scenarioList').addEventListener('click', async e => {
+  const btn = e.target.closest('.scenario-btn');
+  if (!btn || busy) return;
+  const num = btn.dataset.num;
+  // clear chat
+  $messages.innerHTML = '';
+  addMsg('assistant', `<p>Running scenario #${num}…</p>`);
+  setLoading(true);
+
+  try {
+    const res = await fetch(`/api/scenario/${num}`, {method: 'POST'});
+    const data = await res.json();
+    setLoading(false);
+    // remove the "running…" msg
+    $messages.innerHTML = '';
+    for (const turn of data.conversation) {
+      addMsg('user', renderMd(turn.user));
+      addMsg('assistant', renderMd(turn.assistant));
+    }
+    if (data.status) updateStatus(data.status);
+  } catch (e) {
+    setLoading(false);
+    addMsg('assistant error', `<p>Failed: ${escHtml(e.message)}</p>`);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Paperwork modal
+// ═══════════════════════════════════════════════════════════════════════════
+$btnPW.addEventListener('click', async () => {
+  $modal.classList.add('open');
+  // load
+  ['tabSummary','tabReferral','tabReminder'].forEach(id => {
+    document.getElementById(id).querySelector('.doc-text').textContent = 'Generating…';
+  });
+  try {
+    const res = await fetch('/api/paperwork', {method:'POST'});
+    const d = await res.json();
+    if (d.error) {
+      document.getElementById('tabSummary').querySelector('.doc-text').textContent = d.error;
+      return;
+    }
+    document.getElementById('tabSummary').querySelector('.doc-text').textContent  = d.summary  || '—';
+    document.getElementById('tabReferral').querySelector('.doc-text').textContent = d.referral || '—';
+    document.getElementById('tabReminder').querySelector('.doc-text').textContent = d.reminder || '—';
+  } catch(e) {
+    document.getElementById('tabSummary').querySelector('.doc-text').textContent = 'Error';
+  }
+});
+$btnCloseM.addEventListener('click', () => $modal.classList.remove('open'));
+$modal.addEventListener('click', e => { if (e.target === $modal) $modal.classList.remove('open'); });
+
+// Tabs
+document.querySelectorAll('.tab-bar .tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+    document.getElementById('tab' + btn.dataset.tab[0].toUpperCase() + btn.dataset.tab.slice(1)).style.display = '';
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MedGemma — Clinical Workflows</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ===== HEADER ========================================================= -->
+<header>
+  <div class="header-left">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="8" fill="#111"/>
+        <path d="M14 6v16M6 14h16" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h1>MedGemma<span class="accent">Agent</span></h1>
+    <nav class="header-nav">
+      <a href="/" class="nav-link">Scenarios</a>
+      <a href="/chat" class="nav-link">Free Chat</a>
+      <a href="/workflows" class="nav-link active">Workflows</a>
+    </nav>
+  </div>
+  <div class="header-right">
+    <span class="badge">workflows</span>
+  </div>
+</header>
+
+<!-- ===== MAIN ============================================================ -->
+<main class="wf-main">
+  <div class="wf-container">
+    <div class="wf-hero">
+      <h2>Clinical Workflow Engine</h2>
+      <p>Protocol-adherent, chain-based clinical processing. Select a workflow to begin.</p>
+    </div>
+
+    <!-- ─── WORKFLOW GRID ─── -->
+    <div class="wf-grid" id="wfGrid">
+      {% for wf in workflows %}
+      <div class="wf-card" data-id="{{ wf.workflow_id }}">
+        <div class="wf-card-header">
+          <span class="wf-icon">{{ wf.icon }}</span>
+          <span class="wf-specialty">{{ wf.specialty }}</span>
+        </div>
+        <h3 class="wf-name">{{ wf.name }}</h3>
+        <p class="wf-desc">{{ wf.description }}</p>
+        <div class="wf-meta">
+          <div class="wf-badges">
+            {% for itype in wf.input_types %}
+            <span class="wf-input-badge wf-badge-{{ itype|lower }}">{{ itype }}</span>
+            {% endfor %}
+          </div>
+          <span class="wf-protocol">{{ wf.protocol }}</span>
+        </div>
+        <button class="wf-run-btn" data-id="{{ wf.workflow_id }}">Run Workflow</button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ─── WORKFLOW EXECUTION PANEL (slides in) ─── -->
+  <div class="wf-panel" id="wfPanel">
+    <div class="wf-panel-inner">
+      <div class="wf-panel-header">
+        <button class="btn-icon" id="btnClosePanel" title="Close">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <h3 id="panelTitle">Workflow</h3>
+        <span class="badge" id="panelStatus">ready</span>
+      </div>
+
+      <!-- INPUT FORM -->
+      <div class="wf-form" id="wfForm">
+
+        <!-- ── Voice Recording (MedASR) — always available ── -->
+        <div class="wf-field" id="fieldVoice">
+          <label>Voice Dictation <span class="wf-label-tag">MedASR</span></label>
+          <div class="voice-recorder" id="voiceRecorder">
+            <button type="button" class="voice-btn" id="btnMic" title="Hold or click to record">
+              <svg class="mic-icon" width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <rect x="9" y="2" width="6" height="12" rx="3" fill="currentColor"/>
+                <path d="M5 11a7 7 0 0014 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <line x1="8" y1="22" x2="16" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <svg class="stop-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" style="display:none">
+                <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>
+              </svg>
+            </button>
+            <div class="voice-status">
+              <span class="voice-label" id="voiceLabel">Click mic to record dictation</span>
+              <div class="voice-timer" id="voiceTimer" style="display:none">
+                <span class="voice-dot"></span>
+                <span id="voiceTime">0:00</span>
+              </div>
+            </div>
+            <button type="button" class="voice-transcribe-btn" id="btnTranscribe" style="display:none" title="Transcribe recording">
+              Transcribe
+            </button>
+          </div>
+          <div class="voice-result" id="voiceResult" style="display:none">
+            <div class="voice-result-header">
+              <span class="wf-label-tag">Transcription</span>
+              <button type="button" class="voice-use-btn" id="btnUseTranscript" title="Insert into text field">Use ↓</button>
+            </div>
+            <p id="voiceText"></p>
+          </div>
+        </div>
+
+        <!-- ── Text input ── -->
+        <div class="wf-field" id="fieldText" style="display:none">
+          <label for="inputText">Clinical Text</label>
+          <textarea id="inputText" rows="6" placeholder="Paste clinical note, dictation, or report text…"></textarea>
+        </div>
+
+        <!-- ── Image upload ── -->
+        <div class="wf-field" id="fieldImage" style="display:none">
+          <label>Medical Image</label>
+          <div class="upload-zone" id="imageDropZone">
+            <input type="file" id="inputImageFile" accept="image/*" hidden />
+            <div class="upload-zone-content" id="imageZoneContent">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="8.5" cy="8.5" r="2" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              </svg>
+              <span>Drop image here or <b>click to browse</b></span>
+              <span class="upload-hint">PNG, JPG, WEBP, TIFF</span>
+            </div>
+            <div class="upload-preview" id="imagePreview" style="display:none">
+              <img id="imagePreviewImg" alt="preview" />
+              <div class="upload-preview-info">
+                <span id="imageFileName"></span>
+                <button type="button" class="upload-remove" id="btnRemoveImage">✕ Remove</button>
+              </div>
+            </div>
+          </div>
+          <!-- fallback URL input -->
+          <div class="upload-alt">
+            <span class="upload-alt-or">or paste URL</span>
+            <input type="url" id="inputImageUrl" placeholder="https://example.com/fundus.jpg" />
+          </div>
+        </div>
+
+        <!-- ── PDF upload ── -->
+        <div class="wf-field" id="fieldPdf" style="display:none">
+          <label>PDF Report</label>
+          <div class="upload-zone" id="pdfDropZone">
+            <input type="file" id="inputPdfFile" accept=".pdf,application/pdf" hidden />
+            <div class="upload-zone-content" id="pdfZoneContent">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <path d="M6 2h8l6 6v14a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <path d="M14 2v6h6" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                <text x="7" y="18" font-size="7" fill="currentColor" font-weight="600">PDF</text>
+              </svg>
+              <span>Drop PDF here or <b>click to browse</b></span>
+              <span class="upload-hint">Text will be extracted automatically</span>
+            </div>
+            <div class="upload-preview" id="pdfPreview" style="display:none">
+              <div class="upload-preview-info">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 2h8l6 6v14a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                <span id="pdfFileName"></span>
+                <span id="pdfCharCount" class="upload-hint"></span>
+                <button type="button" class="upload-remove" id="btnRemovePdf">✕ Remove</button>
+              </div>
+            </div>
+          </div>
+          <div class="upload-alt">
+            <span class="upload-alt-or">or paste text</span>
+            <textarea id="inputPdfText" rows="4" placeholder="Paste extracted PDF text here…"></textarea>
+          </div>
+        </div>
+
+        <!-- ── CSV upload ── -->
+        <div class="wf-field" id="fieldCsv" style="display:none">
+          <label>CSV Data File</label>
+          <div class="upload-zone" id="csvDropZone">
+            <input type="file" id="inputCsvFile" accept=".csv,.tsv,.txt,text/csv" hidden />
+            <div class="upload-zone-content" id="csvZoneContent">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" stroke-width="1.2"/>
+                <line x1="3" y1="15" x2="21" y2="15" stroke="currentColor" stroke-width="1.2"/>
+                <line x1="9" y1="3" x2="9" y2="21" stroke="currentColor" stroke-width="1.2"/>
+                <line x1="15" y1="3" x2="15" y2="21" stroke="currentColor" stroke-width="1.2"/>
+              </svg>
+              <span>Drop CSV here or <b>click to browse</b></span>
+              <span class="upload-hint">CSV with header row (test,value,unit / drug,dose / hr,sbp,rr,temp…)</span>
+            </div>
+            <div class="upload-preview" id="csvPreview" style="display:none">
+              <div class="upload-preview-info">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" stroke-width="1.2"/><line x1="9" y1="3" x2="9" y2="21" stroke="currentColor" stroke-width="1.2"/></svg>
+                <span id="csvFileName"></span>
+                <span id="csvRowCount" class="upload-hint"></span>
+                <button type="button" class="upload-remove" id="btnRemoveCsv">✕ Remove</button>
+              </div>
+            </div>
+          </div>
+          <div class="upload-alt">
+            <span class="upload-alt-or">or paste CSV content</span>
+            <textarea id="inputCsvText" rows="5" placeholder="test,value,unit&#10;Hemoglobin,12.5,g/dL&#10;WBC,11.2,×10³/µL&#10;..."></textarea>
+          </div>
+        </div>
+
+        <button class="wf-submit-btn" id="btnRunWf" disabled>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2l10 6-10 6V2z" fill="currentColor"/></svg>
+          Execute Chain
+        </button>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="wf-results" id="wfResults" style="display:none">
+        <div class="wf-result-section">
+          <h4>Summary</h4>
+          <p id="resSummary"></p>
+        </div>
+
+        <div class="wf-result-section">
+          <h4>Metrics</h4>
+          <div class="wf-metrics-grid" id="resMetrics"></div>
+        </div>
+
+        <div class="wf-result-section">
+          <h4>Protocol Adherence</h4>
+          <span class="wf-adherence" id="resAdherence"></span>
+        </div>
+
+        <div class="wf-result-section">
+          <h4>Detailed Report</h4>
+          <pre class="wf-report" id="resRaw"></pre>
+        </div>
+      </div>
+
+      <!-- LOADING -->
+      <div class="wf-loading" id="wfLoading" style="display:none">
+        <div class="wf-spinner"></div>
+        <p>Running workflow chain…</p>
+      </div>
+
+      <!-- ERROR -->
+      <div class="wf-error" id="wfError" style="display:none">
+        <p id="errMsg"></p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  State
+// ═══════════════════════════════════════════════════════════════════════════
+let currentWorkflow = null;
+const workflows = {{ workflows_json | safe }};
+
+// Uploaded data store
+let uploadedImageDataUri = null;
+let extractedPdfText = null;
+let uploadedCsvText = null;
+
+const $panel      = document.getElementById('wfPanel');
+const $panelTitle = document.getElementById('panelTitle');
+const $panelStat  = document.getElementById('panelStatus');
+const $form       = document.getElementById('wfForm');
+const $results    = document.getElementById('wfResults');
+const $loading    = document.getElementById('wfLoading');
+const $error      = document.getElementById('wfError');
+const $btnRun     = document.getElementById('btnRunWf');
+const $btnClose   = document.getElementById('btnClosePanel');
+
+// field refs
+const $fieldText  = document.getElementById('fieldText');
+const $fieldImage = document.getElementById('fieldImage');
+const $fieldPdf   = document.getElementById('fieldPdf');
+const $fieldCsv   = document.getElementById('fieldCsv');
+const $fieldVoice = document.getElementById('fieldVoice');
+const $inText     = document.getElementById('inputText');
+const $inImage    = document.getElementById('inputImageUrl');
+const $inPdf      = document.getElementById('inputPdfText');
+const $inCsv      = document.getElementById('inputCsvText');
+
+// upload refs
+const $imageFile    = document.getElementById('inputImageFile');
+const $pdfFile      = document.getElementById('inputPdfFile');
+const $csvFile      = document.getElementById('inputCsvFile');
+const $imageDZ      = document.getElementById('imageDropZone');
+const $pdfDZ        = document.getElementById('pdfDropZone');
+const $csvDZ        = document.getElementById('csvDropZone');
+const $imagePreview = document.getElementById('imagePreview');
+const $pdfPreview   = document.getElementById('pdfPreview');
+const $csvPreview   = document.getElementById('csvPreview');
+const $imageZC      = document.getElementById('imageZoneContent');
+const $pdfZC        = document.getElementById('pdfZoneContent');
+const $csvZC        = document.getElementById('csvZoneContent');
+
+// voice refs
+const $btnMic        = document.getElementById('btnMic');
+const $btnTranscribe = document.getElementById('btnTranscribe');
+const $btnUseText    = document.getElementById('btnUseTranscript');
+const $voiceLabel    = document.getElementById('voiceLabel');
+const $voiceTimer    = document.getElementById('voiceTimer');
+const $voiceTime     = document.getElementById('voiceTime');
+const $voiceResult   = document.getElementById('voiceResult');
+const $voiceText     = document.getElementById('voiceText');
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Helpers
+// ═══════════════════════════════════════════════════════════════════════════
+function checkSubmittable() {
+  const hasText  = $inText.value.trim().length > 0;
+  const hasImage = !!uploadedImageDataUri || $inImage.value.trim().length > 0;
+  const hasPdf   = !!extractedPdfText || $inPdf.value.trim().length > 0;
+  const hasCsv   = !!uploadedCsvText || $inCsv.value.trim().length > 0;
+  $btnRun.disabled = !(hasText || hasImage || hasPdf || hasCsv);
+}
+
+[$inText, $inImage, $inPdf, $inCsv].forEach(el => el.addEventListener('input', checkSubmittable));
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Image Upload
+// ═══════════════════════════════════════════════════════════════════════════
+$imageDZ.addEventListener('click', e => {
+  if (e.target.closest('.upload-remove')) return;
+  $imageFile.click();
+});
+$imageDZ.addEventListener('dragover', e => { e.preventDefault(); $imageDZ.classList.add('drag-over'); });
+$imageDZ.addEventListener('dragleave', () => $imageDZ.classList.remove('drag-over'));
+$imageDZ.addEventListener('drop', e => {
+  e.preventDefault();
+  $imageDZ.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) handleImageFile(file);
+});
+$imageFile.addEventListener('change', () => {
+  if ($imageFile.files[0]) handleImageFile($imageFile.files[0]);
+});
+
+async function handleImageFile(file) {
+  $imageZC.style.display = 'none';
+  const fd = new FormData();
+  fd.append('file', file);
+
+  $voiceLabel.textContent = 'Uploading image…';
+  try {
+    const res = await fetch('/api/upload/image', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    uploadedImageDataUri = data.image_url;
+
+    // Show preview
+    document.getElementById('imagePreviewImg').src = URL.createObjectURL(file);
+    document.getElementById('imageFileName').textContent = `${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+    $imagePreview.style.display = '';
+    $voiceLabel.textContent = 'Click mic to record dictation';
+    checkSubmittable();
+  } catch (err) {
+    $imageZC.style.display = '';
+    alert('Image upload failed: ' + err.message);
+  }
+}
+
+document.getElementById('btnRemoveImage').addEventListener('click', e => {
+  e.stopPropagation();
+  uploadedImageDataUri = null;
+  $imagePreview.style.display = 'none';
+  $imageZC.style.display = '';
+  $imageFile.value = '';
+  checkSubmittable();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PDF Upload
+// ═══════════════════════════════════════════════════════════════════════════
+$pdfDZ.addEventListener('click', e => {
+  if (e.target.closest('.upload-remove')) return;
+  $pdfFile.click();
+});
+$pdfDZ.addEventListener('dragover', e => { e.preventDefault(); $pdfDZ.classList.add('drag-over'); });
+$pdfDZ.addEventListener('dragleave', () => $pdfDZ.classList.remove('drag-over'));
+$pdfDZ.addEventListener('drop', e => {
+  e.preventDefault();
+  $pdfDZ.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') handlePdfFile(file);
+});
+$pdfFile.addEventListener('change', () => {
+  if ($pdfFile.files[0]) handlePdfFile($pdfFile.files[0]);
+});
+
+async function handlePdfFile(file) {
+  $pdfZC.style.display = 'none';
+  const fd = new FormData();
+  fd.append('file', file);
+
+  // Show loading state in preview
+  $pdfPreview.style.display = '';
+  document.getElementById('pdfFileName').textContent = file.name;
+  document.getElementById('pdfCharCount').textContent = 'Extracting text…';
+
+  try {
+    const res = await fetch('/api/upload/pdf', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    extractedPdfText = data.pdf_text;
+    document.getElementById('pdfCharCount').textContent = `${data.chars.toLocaleString()} characters extracted`;
+    checkSubmittable();
+  } catch (err) {
+    $pdfZC.style.display = '';
+    $pdfPreview.style.display = 'none';
+    alert('PDF extraction failed: ' + err.message);
+  }
+}
+
+document.getElementById('btnRemovePdf').addEventListener('click', e => {
+  e.stopPropagation();
+  extractedPdfText = null;
+  $pdfPreview.style.display = 'none';
+  $pdfZC.style.display = '';
+  $pdfFile.value = '';
+  checkSubmittable();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  CSV Upload
+// ═══════════════════════════════════════════════════════════════════════════
+$csvDZ.addEventListener('click', e => {
+  if (e.target.closest('.upload-remove')) return;
+  $csvFile.click();
+});
+$csvDZ.addEventListener('dragover', e => { e.preventDefault(); $csvDZ.classList.add('drag-over'); });
+$csvDZ.addEventListener('dragleave', () => $csvDZ.classList.remove('drag-over'));
+$csvDZ.addEventListener('drop', e => {
+  e.preventDefault();
+  $csvDZ.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleCsvFile(file);
+});
+$csvFile.addEventListener('change', () => {
+  if ($csvFile.files[0]) handleCsvFile($csvFile.files[0]);
+});
+
+async function handleCsvFile(file) {
+  $csvZC.style.display = 'none';
+  const fd = new FormData();
+  fd.append('file', file);
+
+  $csvPreview.style.display = '';
+  document.getElementById('csvFileName').textContent = file.name;
+  document.getElementById('csvRowCount').textContent = 'Uploading…';
+
+  try {
+    const res = await fetch('/api/upload/csv', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    uploadedCsvText = data.csv_text;
+    document.getElementById('csvRowCount').textContent = `${data.rows} rows, ${data.chars.toLocaleString()} chars`;
+    checkSubmittable();
+  } catch (err) {
+    $csvZC.style.display = '';
+    $csvPreview.style.display = 'none';
+    alert('CSV upload failed: ' + err.message);
+  }
+}
+
+document.getElementById('btnRemoveCsv').addEventListener('click', e => {
+  e.stopPropagation();
+  uploadedCsvText = null;
+  $csvPreview.style.display = 'none';
+  $csvZC.style.display = '';
+  $csvFile.value = '';
+  checkSubmittable();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Voice Recording (MedASR)
+// ═══════════════════════════════════════════════════════════════════════════
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingBlob = null;
+let recInterval = null;
+let recStart = 0;
+
+$btnMic.addEventListener('click', async () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    // Stop recording
+    mediaRecorder.stop();
+    return;
+  }
+
+  // Start recording
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    recordingBlob = null;
+
+    // Prefer WAV-compatible format; fall back to whatever the browser supports
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+
+    mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      recordingBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      clearInterval(recInterval);
+
+      // UI updates
+      $btnMic.classList.remove('recording');
+      $btnMic.querySelector('.mic-icon').style.display = '';
+      $btnMic.querySelector('.stop-icon').style.display = 'none';
+      $voiceTimer.style.display = 'none';
+      $voiceLabel.textContent = `Recorded ${$voiceTime.textContent} — ready to transcribe`;
+      $btnTranscribe.style.display = '';
+    };
+
+    mediaRecorder.start(250); // collect chunks every 250ms
+    recStart = Date.now();
+
+    // UI updates
+    $btnMic.classList.add('recording');
+    $btnMic.querySelector('.mic-icon').style.display = 'none';
+    $btnMic.querySelector('.stop-icon').style.display = '';
+    $voiceLabel.textContent = 'Recording…';
+    $voiceTimer.style.display = '';
+    $voiceResult.style.display = 'none';
+    $btnTranscribe.style.display = 'none';
+
+    recInterval = setInterval(() => {
+      const secs = Math.floor((Date.now() - recStart) / 1000);
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      $voiceTime.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    }, 500);
+
+  } catch (err) {
+    alert('Microphone access denied or unavailable: ' + err.message);
+  }
+});
+
+// Transcribe button
+$btnTranscribe.addEventListener('click', async () => {
+  if (!recordingBlob) return;
+
+  $btnTranscribe.disabled = true;
+  $btnTranscribe.textContent = 'Transcribing…';
+  $voiceLabel.textContent = 'Sending to MedASR…';
+
+  const fd = new FormData();
+  fd.append('audio', recordingBlob, 'recording.webm');
+
+  try {
+    const res = await fetch('/api/transcribe', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    $voiceText.textContent = data.text;
+    $voiceResult.style.display = '';
+    $voiceLabel.textContent = `Transcribed (${data.chars} chars) — MedASR`;
+  } catch (err) {
+    $voiceLabel.textContent = 'Transcription failed: ' + err.message;
+  } finally {
+    $btnTranscribe.disabled = false;
+    $btnTranscribe.textContent = 'Transcribe';
+  }
+});
+
+// Insert transcript into text field
+$btnUseText.addEventListener('click', () => {
+  const transcript = $voiceText.textContent.trim();
+  if (!transcript) return;
+  // If text field visible, append there; otherwise populate it and show it
+  $fieldText.style.display = '';
+  if ($inText.value.trim()) {
+    $inText.value += '\n\n' + transcript;
+  } else {
+    $inText.value = transcript;
+  }
+  checkSubmittable();
+  $inText.focus();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Open panel for a workflow
+// ═══════════════════════════════════════════════════════════════════════════
+function openWorkflow(id) {
+  const wf = workflows.find(w => w.workflow_id === id);
+  if (!wf) return;
+  currentWorkflow = wf;
+
+  $panelTitle.textContent = wf.name + ' — ' + wf.specialty;
+  $panelStat.textContent = 'ready';
+  $panelStat.className = 'badge';
+
+  // Show relevant input fields
+  const types = wf.input_types.map(t => t.toLowerCase());
+  $fieldText.style.display  = (types.includes('text') || types.includes('pdf')) ? '' : 'none';
+  $fieldImage.style.display = types.includes('image') ? '' : 'none';
+  $fieldPdf.style.display   = types.includes('pdf') ? '' : 'none';
+  $fieldCsv.style.display   = types.includes('csv') ? '' : 'none';
+  $fieldVoice.style.display = ''; // always available
+
+  // Clear all inputs
+  $inText.value = '';
+  $inImage.value = '';
+  $inPdf.value = '';
+  $inCsv.value = '';
+  uploadedImageDataUri = null;
+  extractedPdfText = null;
+  uploadedCsvText = null;
+  $imagePreview.style.display = 'none';
+  $imageZC.style.display = '';
+  $pdfPreview.style.display = 'none';
+  $pdfZC.style.display = '';
+  $csvPreview.style.display = 'none';
+  $csvZC.style.display = '';
+  $imageFile.value = '';
+  $pdfFile.value = '';
+  $csvFile.value = '';
+
+  // Reset voice
+  $voiceLabel.textContent = 'Click mic to record dictation';
+  $voiceTimer.style.display = 'none';
+  $voiceResult.style.display = 'none';
+  $btnTranscribe.style.display = 'none';
+  recordingBlob = null;
+
+  $results.style.display = 'none';
+  $loading.style.display = 'none';
+  $error.style.display = 'none';
+  $form.style.display = '';
+  $btnRun.disabled = true;
+
+  $panel.classList.add('open');
+}
+
+// Close
+$btnClose.addEventListener('click', () => {
+  $panel.classList.remove('open');
+  currentWorkflow = null;
+  // Stop recording if active
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+});
+
+// Card click
+document.getElementById('wfGrid').addEventListener('click', e => {
+  const card = e.target.closest('.wf-card');
+  const btn = e.target.closest('.wf-run-btn');
+  const id = (btn || card)?.dataset?.id;
+  if (id) openWorkflow(id);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Run workflow
+// ═══════════════════════════════════════════════════════════════════════════
+$btnRun.addEventListener('click', async () => {
+  if (!currentWorkflow) return;
+
+  const payload = { workflow_id: currentWorkflow.workflow_id };
+  if ($inText.value.trim())  payload.text = $inText.value.trim();
+
+  // Image: prefer uploaded file data-URI, fall back to URL
+  if (uploadedImageDataUri) {
+    payload.image_url = uploadedImageDataUri;
+  } else if ($inImage.value.trim()) {
+    payload.image_url = $inImage.value.trim();
+  }
+
+  // PDF: prefer uploaded extraction, fall back to pasted text
+  if (extractedPdfText) {
+    payload.pdf_text = extractedPdfText;
+  } else if ($inPdf.value.trim()) {
+    payload.pdf_text = $inPdf.value.trim();
+  }
+
+  // CSV: prefer uploaded file, fall back to pasted text
+  if (uploadedCsvText) {
+    payload.csv_text = uploadedCsvText;
+  } else if ($inCsv.value.trim()) {
+    payload.csv_text = $inCsv.value.trim();
+  }
+
+  $form.style.display = 'none';
+  $results.style.display = 'none';
+  $error.style.display = 'none';
+  $loading.style.display = '';
+  $panelStat.textContent = 'running';
+  $panelStat.className = 'badge wf-badge-running';
+
+  try {
+    const res = await fetch('/api/workflows/run', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    $loading.style.display = 'none';
+
+    if (data.status === 'error') {
+      $panelStat.textContent = 'error';
+      $panelStat.className = 'badge wf-badge-error';
+      document.getElementById('errMsg').textContent = data.data?.summary || 'Workflow failed.';
+      $error.style.display = '';
+      $form.style.display = '';
+      return;
+    }
+
+    // Success — show results
+    $panelStat.textContent = 'success';
+    $panelStat.className = 'badge wf-badge-success';
+
+    document.getElementById('resSummary').textContent = data.data?.summary || '';
+    document.getElementById('resRaw').textContent = data.data?.raw_output || '';
+
+    // Adherence
+    const adh = document.getElementById('resAdherence');
+    if (data.data?.protocol_adherence) {
+      adh.textContent = '✓ Protocol Adherent';
+      adh.className = 'wf-adherence adherent';
+    } else {
+      adh.textContent = '✗ Non-Adherent';
+      adh.className = 'wf-adherence non-adherent';
+    }
+
+    // Metrics
+    const $met = document.getElementById('resMetrics');
+    $met.innerHTML = '';
+    const metrics = data.data?.metrics || {};
+    for (const [k, v] of Object.entries(metrics)) {
+      const div = document.createElement('div');
+      div.className = 'wf-metric';
+      div.innerHTML = `<span class="wf-metric-label">${k.replace(/_/g, ' ')}</span><span class="wf-metric-value">${v}</span>`;
+      $met.appendChild(div);
+    }
+
+    $results.style.display = '';
+    $form.style.display = '';
+  } catch (err) {
+    $loading.style.display = 'none';
+    $panelStat.textContent = 'error';
+    $panelStat.className = 'badge wf-badge-error';
+    document.getElementById('errMsg').textContent = 'Network error: ' + err.message;
+    $error.style.display = '';
+    $form.style.display = '';
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+"""
+paperwork_agent.py — Documentation & export agent.
+
+Handles post-appointment paperwork:
+  • Generate patient-facing appointment summary
+  • Export clinical notes as structured reports
+  • Produce referral letters
+  • Create follow-up reminders
+
+This agent sits alongside Patient + Doctor agents and is invoked
+by the Orchestrator after a successful booking.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+from datetime import datetime
+from typing import Any
+
+from base_agent import BaseAgent
+from db import MedicalAppointmentDB
+from llm_config import DEFAULT_MODEL
+
+logger = logging.getLogger(__name__)
+
+
+class PaperworkAgent(BaseAgent):
+    """
+    Produces post-booking documentation for patients and clinicians.
+    """
+
+    def __init__(self, model: str = DEFAULT_MODEL):
+        self.db = MedicalAppointmentDB()
+        self._context: dict[str, Any] = {}
+        super().__init__(name="PaperworkAgent", model=model)
+
+    # ── receive context ───────────────────────────────────────────────────────
+
+    def set_context(
+        self,
+        patient_info: dict,
+        triage_result: dict,
+        clinical_note: str,
+        appointment: dict | None = None,
+        imaging_results: list[dict] | None = None,
+    ):
+        """Load all relevant data from the other agents."""
+        self._context = {
+            "patient_info": patient_info,
+            "triage_result": triage_result,
+            "clinical_note": clinical_note,
+            "appointment": appointment or {},
+            "imaging_results": imaging_results or [],
+        }
+        logger.info("[PaperworkAgent] context set for %s",
+                    patient_info.get("name", "?"))
+
+    # ── system prompt ─────────────────────────────────────────────────────────
+
+    def _build_system_prompt(self) -> str:
+        return (
+            "You are a medical documentation assistant. You generate clear, "
+            "professional documents for patients and clinicians.\n\n"
+            "YOUR TOOLS:\n"
+            "  1. generate_appointment_summary — plain-language summary for the patient\n"
+            "  2. generate_referral_letter     — formal referral to a specialist\n"
+            "  3. generate_followup_reminder   — reminder text for the patient\n\n"
+            "Use the patient data, triage results, and clinical note provided "
+            "in the conversation context to produce accurate documents.\n"
+            "Be professional, empathetic, and clear.\n"
+        )
+
+    # ── tool implementations ──────────────────────────────────────────────────
+
+    def generate_appointment_summary(self) -> dict:
+        """Create a patient-friendly appointment summary."""
+        ctx = self._context
+        pi  = ctx.get("patient_info", {})
+        apt = ctx.get("appointment", {})
+        tri = ctx.get("triage_result", {})
+
+        summary_lines = [
+            f"  APPOINTMENT SUMMARY",
+            f"{'─'*40}",
+            f"Patient    : {pi.get('name', 'N/A')}",
+            f"Phone      : {pi.get('phone', 'N/A')}",
+        ]
+        if apt:
+            summary_lines += [
+                f"Doctor     : {apt.get('doctor', 'N/A')}",
+                f"Specialty  : {apt.get('specialty', 'N/A')}",
+                f"Date       : {apt.get('date', 'N/A')}",
+                f"Time       : {apt.get('time', 'N/A')}",
+                f"Booking ID : {apt.get('id', 'N/A')}",
+            ]
+        if tri:
+            summary_lines += [
+                f"",
+                f"Urgency    : {tri.get('urgency_level', 'N/A')}",
+                f"Reason     : {pi.get('symptoms', 'N/A')}",
+            ]
+
+        summary = "\n".join(summary_lines)
+        logger.info("[PaperworkAgent] appointment summary generated")
+        return {"status": "success", "summary": summary}
+
+    def generate_referral_letter(
+        self, referring_doctor: str = "AI Triage System"
+    ) -> dict:
+        """Generate a specialist referral letter."""
+        ctx = self._context
+        pi  = ctx.get("patient_info", {})
+        tri = ctx.get("triage_result", {})
+        note = ctx.get("clinical_note", "No clinical note available.")
+
+        letter = (
+            f"REFERRAL LETTER\n"
+            f"{'='*40}\n"
+            f"Date            : {datetime.utcnow().strftime('%Y-%m-%d')}\n"
+            f"Referring        : {referring_doctor}\n"
+            f"Patient          : {pi.get('name', 'N/A')}\n"
+            f"Phone            : {pi.get('phone', 'N/A')}\n"
+            f"Recommended Spec.: {tri.get('recommended_specialty', 'General')}\n\n"
+            f"REASON FOR REFERRAL\n"
+            f"{'─'*40}\n"
+            f"Symptoms: {pi.get('symptoms', 'N/A')}\n"
+            f"Duration: {pi.get('duration', 'N/A')}\n"
+            f"Severity: {pi.get('severity', 'N/A')}\n\n"
+            f"CLINICAL NOTE\n"
+            f"{'─'*40}\n"
+            f"{note}\n\n"
+            f"{'='*40}\n"
+            f"This referral was generated by an AI-assisted triage system.\n"
+            f"Clinical review is required before treatment decisions."
+        )
+        logger.info("[PaperworkAgent] referral letter generated")
+        return {"status": "success", "letter": letter}
+
+    def generate_followup_reminder(self, days_until: int = 7) -> dict:
+        """Create a follow-up reminder message for the patient."""
+        ctx = self._context
+        pi  = ctx.get("patient_info", {})
+        apt = ctx.get("appointment", {})
+
+        reminder = (
+            f"Hello {pi.get('name', 'there')},\n\n"
+            f"This is a reminder about your upcoming appointment"
+        )
+        if apt:
+            reminder += (
+                f" with {apt.get('doctor', 'your doctor')} "
+                f"({apt.get('specialty', '')}) "
+                f"on {apt.get('date', 'N/A')} at {apt.get('time', 'N/A')}."
+            )
+        else:
+            reminder += "."
+
+        reminder += (
+            f"\n\nPlease bring:\n"
+            f"  - Photo ID\n"
+            f"  - Insurance card\n"
+            f"  - List of current medications\n"
+            f"  - Any recent test results or imaging\n\n"
+            f"If you need to reschedule, please call us at least 24 hours in advance.\n\n"
+            f"Best regards,\n"
+            f"Medical Appointment Team"
+        )
+        logger.info("[PaperworkAgent] follow-up reminder generated")
+        return {"status": "success", "reminder": reminder}
+
+    # ── dispatch & schemas ────────────────────────────────────────────────────
+
+    def available_function(self, function_name: str):
+        _map = {
+            "generate_appointment_summary": self.generate_appointment_summary,
+            "generate_referral_letter":     self.generate_referral_letter,
+            "generate_followup_reminder":   self.generate_followup_reminder,
+        }
+        if function_name not in _map:
+            raise ValueError(f"[PaperworkAgent] unknown tool: {function_name!r}")
+        return _map[function_name]
+
+    def _build_tool_schemas(self) -> list[dict]:
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": "generate_appointment_summary",
+                    "description": "Generate a patient-friendly appointment summary.",
+                    "parameters": {"type": "object", "properties": {}, "required": []},
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "generate_referral_letter",
+                    "description": "Generate a formal specialist referral letter.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "referring_doctor": {
+                                "type": "string",
+                                "description": "Name of the referring entity",
+                            },
+                        },
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "generate_followup_reminder",
+                    "description": "Create a follow-up reminder message for the patient.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "days_until": {
+                                "type": "integer",
+                                "description": "Days before appointment to send reminder",
+                            },
+                        },
+                    },
+                },
+            },
+        ]
+
+    def reset_state(self):
+        self.reset()
+        self._context = {}
+        logger.info("[PaperworkAgent] state reset")
+
+
+
+
+
+
+
+

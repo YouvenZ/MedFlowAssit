@@ -1,0 +1,35 @@
+# ═══════════════════════════════════════════════════════════════════
+#  MedGemma Clinical Workflow Engine — Python Dependencies
+# ═══════════════════════════════════════════════════════════════════
+
+# ── Core web framework ────────────────────────────────────────────
+flask>=3.0
+python-dotenv>=1.0
+
+# ── LLM backend (Groq / OpenAI / LiteLLM) ────────────────────────
+litellm>=1.40
+
+# ── MedGemma vision client ────────────────────────────────────────
+transformers>=4.40
+torch>=2.1
+Pillow>=10.0
+requests>=2.31
+bitsandbytes>=0.43          # quantization support (NF4/FP4/INT8)
+
+# ── MedASR — medical speech-to-text ──────────────────────────────
+numpy>=1.24
+pydub>=0.25.1               # audio format conversion (WebM → WAV)
+# NOTE: pydub requires ffmpeg on PATH for non-WAV formats.
+#       Install via: conda install ffmpeg  OR  choco install ffmpeg
+
+# ── PDF text extraction (any ONE suffices; all are tried) ─────────
+pypdf>=4.0
+# PyPDF2>=3.0              # legacy fallback (optional)
+# pdfplumber>=0.10         # scanned-PDF fallback (optional)
+
+# ── Testing / validation ─────────────────────────────────────────
+colorama>=0.4               # coloured terminal output for test script
+huggingface-hub>=0.20       # model download helper
+
+# ── Database ──────────────────────────────────────────────────────
+# sqlite3 is included in Python stdlib — no extra package needed.
