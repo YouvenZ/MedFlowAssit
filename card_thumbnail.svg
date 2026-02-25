@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="280" viewBox="0 0 560 280" font-family="'Inter', 'SF Pro Display', 'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.6" y2="1">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="40%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="cardGlass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="amberFade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D97706" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#D97706" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="emeraldFade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#059669" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#059669" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
+      <feOffset dx="0" dy="2"/>
+      <feComponentTransfer result="shadow"><feFuncA type="linear" slope="0.15"/></feComponentTransfer>
+      <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Subtle grid pattern -->
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M30,0 L0,0 L0,30" fill="none" stroke="#334155" stroke-width="0.3" opacity="0.3"/>
+    </pattern>
+  </defs>
+
+  <!-- ═══ BACKGROUND ═══ -->
+  <rect width="560" height="280" rx="12" fill="url(#bg)"/>
+  <rect width="560" height="280" rx="12" fill="url(#grid)"/>
+
+  <!-- Decorative ambient blobs -->
+  <circle cx="80" cy="140" r="120" fill="url(#amberFade)"/>
+  <circle cx="480" cy="140" r="120" fill="url(#emeraldFade)"/>
+
+  <!-- ═══ TOP ACCENT LINE ═══ -->
+  <rect x="0" y="0" width="560" height="3" rx="0" fill="url(#accent)"/>
+
+  <!-- ═══ TITLE BLOCK ═══ -->
+  <text x="280" y="38" text-anchor="middle" fill="#F8FAFC" font-size="22" font-weight="800" letter-spacing="0.5">MedGemma Care Pathway Engine</text>
+  <text x="280" y="56" text-anchor="middle" fill="#64748B" font-size="9" font-weight="400" letter-spacing="2">TURNING MEDICAL KNOWLEDGE INTO EXECUTABLE PATIENT WORKFLOWS</text>
+
+  <!-- Thin separator -->
+  <rect x="200" y="64" width="160" height="1.5" rx="0.75" fill="url(#accent)" opacity="0.5"/>
+
+  <!-- ═══ TWO USE CASE CARDS ═══ -->
+
+  <!-- Use Case 1 -->
+  <rect x="20" y="76" width="252" height="120" rx="10" fill="url(#cardGlass)" stroke="#D97706" stroke-width="0.6" stroke-opacity="0.5" filter="url(#cardShadow)"/>
+  <rect x="20" y="76" width="252" height="22" rx="10" fill="#D97706" fill-opacity="0.2"/>
+  <rect x="20" y="90" width="252" height="8" fill="#D97706" fill-opacity="0.2"/>
+  <text x="146" y="92" text-anchor="middle" fill="#FCD34D" font-size="9" font-weight="700" letter-spacing="0.5">USE CASE 1  &#xB7;  AGENTIC ASSISTANT</text>
+
+  <!-- Agent flow -->
+  <rect x="32" y="108" width="68" height="22" rx="5" fill="#D97706" fill-opacity="0.25" stroke="#D97706" stroke-width="0.4"/>
+  <text x="66" y="123" text-anchor="middle" fill="#FCD34D" font-size="7" font-weight="600">Orchestrator</text>
+
+  <text x="108" y="123" fill="#64748B" font-size="8">&#x2192;</text>
+
+  <rect x="118" y="108" width="68" height="22" rx="5" fill="#D97706" fill-opacity="0.25" stroke="#D97706" stroke-width="0.4"/>
+  <text x="152" y="123" text-anchor="middle" fill="#FCD34D" font-size="7" font-weight="600">PatientAgent</text>
+
+  <text x="194" y="123" fill="#64748B" font-size="8">&#x2192;</text>
+
+  <rect x="204" y="108" width="56" height="22" rx="5" fill="#D97706" fill-opacity="0.25" stroke="#D97706" stroke-width="0.4"/>
+  <text x="232" y="123" text-anchor="middle" fill="#FCD34D" font-size="7" font-weight="600">DoctorAgent</text>
+
+  <!-- Features -->
+  <text x="34" y="148" fill="#94A3B8" font-size="7">&#x2022; Symptom triage &amp; image analysis</text>
+  <text x="34" y="161" fill="#94A3B8" font-size="7">&#x2022; SOAP notes &amp; appointment booking</text>
+  <text x="34" y="174" fill="#94A3B8" font-size="7">&#x2022; Auto-handoff · 23 specialties · SQLite</text>
+
+  <rect x="34" y="181" width="224" height="10" rx="3" fill="#D97706" fill-opacity="0.12"/>
+  <text x="146" y="189" text-anchor="middle" fill="#D97706" font-size="6" font-weight="600">Intake &#x2192; Scheduling &#x2192; Paperwork</text>
+
+  <!-- Use Case 2 -->
+  <rect x="288" y="76" width="252" height="120" rx="10" fill="url(#cardGlass)" stroke="#059669" stroke-width="0.6" stroke-opacity="0.5" filter="url(#cardShadow)"/>
+  <rect x="288" y="76" width="252" height="22" rx="10" fill="#059669" fill-opacity="0.2"/>
+  <rect x="288" y="90" width="252" height="8" fill="#059669" fill-opacity="0.2"/>
+  <text x="414" y="92" text-anchor="middle" fill="#6EE7B7" font-size="9" font-weight="700" letter-spacing="0.5">USE CASE 2  &#xB7;  WORKFLOW ENGINE</text>
+
+  <!-- Chain flow -->
+  <rect x="300" y="108" width="48" height="22" rx="5" fill="#059669" fill-opacity="0.25" stroke="#059669" stroke-width="0.4"/>
+  <text x="324" y="123" text-anchor="middle" fill="#6EE7B7" font-size="7" font-weight="600">Input</text>
+
+  <text x="356" y="123" fill="#64748B" font-size="8">&#x2192;</text>
+
+  <rect x="366" y="108" width="72" height="22" rx="5" fill="#059669" fill-opacity="0.25" stroke="#059669" stroke-width="0.4"/>
+  <text x="402" y="123" text-anchor="middle" fill="#6EE7B7" font-size="7" font-weight="600">LLM Extract</text>
+
+  <text x="446" y="123" fill="#64748B" font-size="8">&#x2192;</text>
+
+  <rect x="456" y="108" width="72" height="22" rx="5" fill="#059669" fill-opacity="0.25" stroke="#059669" stroke-width="0.4"/>
+  <text x="492" y="123" text-anchor="middle" fill="#6EE7B7" font-size="7" font-weight="600">Det. Logic</text>
+
+  <!-- Workflow list -->
+  <text x="302" y="148" fill="#94A3B8" font-size="7">&#x2022; 13 clinical protocols · 10 specialties</text>
+  <text x="302" y="161" fill="#94A3B8" font-size="7">&#x2022; Retina · Stroke · Triage · SOAP · qSOFA</text>
+  <text x="302" y="174" fill="#94A3B8" font-size="7">&#x2022; 3 zero-LLM CSV workflows (Lab/Rx/Vitals)</text>
+
+  <rect x="302" y="181" width="224" height="10" rx="3" fill="#059669" fill-opacity="0.12"/>
+  <text x="414" y="189" text-anchor="middle" fill="#059669" font-size="6" font-weight="600">Input &#x2192; Extract &#x2192; Score &#x2192; JSON</text>
+
+  <!-- ═══ MODEL LAYER ═══ -->
+  <rect x="20" y="206" width="520" height="36" rx="8" fill="url(#cardGlass)" stroke="#7C3AED" stroke-width="0.5" stroke-opacity="0.4" filter="url(#cardShadow)"/>
+
+  <!-- MedGemma -->
+  <rect x="30" y="212" width="160" height="24" rx="6" fill="#7C3AED" fill-opacity="0.12" stroke="#7C3AED" stroke-width="0.3"/>
+  <text x="38" y="228" fill="#C4B5FD" font-size="8" font-weight="700">&#x1FAC0; MedGemma 1.5 4B-IT</text>
+  <rect x="156" y="217" width="28" height="12" rx="3" fill="#7C3AED" fill-opacity="0.2"/>
+  <text x="170" y="227" text-anchor="middle" fill="#A78BFA" font-size="5.5" font-weight="600">Local</text>
+
+  <!-- MedASR -->
+  <rect x="200" y="212" width="140" height="24" rx="6" fill="#7C3AED" fill-opacity="0.12" stroke="#7C3AED" stroke-width="0.3"/>
+  <text x="208" y="228" fill="#C4B5FD" font-size="8" font-weight="700">&#x1F399;&#xFE0F; MedASR 105M</text>
+  <rect x="310" y="217" width="24" height="12" rx="3" fill="#7C3AED" fill-opacity="0.2"/>
+  <text x="322" y="227" text-anchor="middle" fill="#A78BFA" font-size="5.5" font-weight="600">Local</text>
+
+  <!-- Cloud LLM -->
+  <rect x="350" y="212" width="182" height="24" rx="6" fill="#7C3AED" fill-opacity="0.12" stroke="#7C3AED" stroke-width="0.3"/>
+  <text x="358" y="228" fill="#C4B5FD" font-size="8" font-weight="700">&#x2601;&#xFE0F; OpenAI OSS 120B · Groq</text>
+  <rect x="500" y="217" width="26" height="12" rx="3" fill="#FEF3C7" fill-opacity="0.3"/>
+  <text x="513" y="227" text-anchor="middle" fill="#FCD34D" font-size="5.5" font-weight="600">Cloud</text>
+
+  <!-- ═══ PROPERTIES STRIP ═══ -->
+  <rect x="20" y="250" width="520" height="18" rx="5" fill="#FFFFFF" fill-opacity="0.04"/>
+
+  <text x="72" y="263" text-anchor="middle" fill="#6EE7B7" font-size="7" font-weight="600">&#x1F512; Privacy-First</text>
+  <line x1="140" y1="253" x2="140" y2="264" stroke="#334155" stroke-width="0.5"/>
+  <text x="200" y="263" text-anchor="middle" fill="#93C5FD" font-size="7" font-weight="600">&#x1F501; Reproducible</text>
+  <line x1="260" y1="253" x2="260" y2="264" stroke="#334155" stroke-width="0.5"/>
+  <text x="316" y="263" text-anchor="middle" fill="#FCD34D" font-size="7" font-weight="600">&#x26A1; Low Latency</text>
+  <line x1="370" y1="253" x2="370" y2="264" stroke="#334155" stroke-width="0.5"/>
+  <text x="426" y="263" text-anchor="middle" fill="#C4B5FD" font-size="7" font-weight="600">&#x1FA7A; 23 Specialties</text>
+  <line x1="486" y1="253" x2="486" y2="264" stroke="#334155" stroke-width="0.5"/>
+  <text x="524" y="263" text-anchor="middle" fill="#94A3B8" font-size="7" font-weight="600">&#x1F4E6; 1-Cmd</text>
+
+  <!-- ═══ BOTTOM ACCENT ═══ -->
+  <rect x="0" y="277" width="560" height="3" fill="url(#accent)" opacity="0.6"/>
+</svg>
